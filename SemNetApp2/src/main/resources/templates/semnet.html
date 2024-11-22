@@ -10,6 +10,32 @@
 </head>
 <body>
 	<div class="container">
+	<h3>観光地ルート提案</h3>
+		<form action="/search" method="post">
+			<div class="form-group">
+				<label for="leave">出発地名:</label> <input type="text"
+					class="form-control" name="leave" required>
+			</div>
+			<div class="form-group">
+				<label for="arrive">到着地名:</label> <input type="text"
+					class="form-control" name="arrive" required>
+			</div>
+			<div class="form-group">
+				<label for="time">制限時間:</label> <input type="number"
+					class="form-control" name="time" required>
+			</div>
+			<div id="touristSpotsContainer">
+			<div class="touristSpot">
+            <h4>観光地 1</h4>
+            <div class="form-group">
+                <label for="keywords">キーワード:</label>
+                <input type="text" class="form-control" name="spots[0]" placeholder="カンマ区切りで入力" required>
+            </div>
+        </div>
+        </div>
+         <button type="button" class="btn btn-secondary" onclick="addTouristSpot()">観光地を追加</button>
+			<button class="btn btn-primary" type="submit">検索</button>
+		</form>
 		<h3>セマンティックネット</h3>
 		<table id="data-table" class="table table-bordered">
 			<thead class="thead-dark">
@@ -69,6 +95,21 @@
 	</div>
 	<div id="graph"></div>
 	<script th:inline="javascript">
+	let spotIndex = 1; // 次の観光地インデックス
+	function addTouristSpot() {
+        const container = document.getElementById("touristSpotsContainer");
+        const newSpot = document.createElement("div");
+        newSpot.className = "touristSpot";
+        newSpot.innerHTML = `
+            <h4>観光地 ${spotIndex + 1}</h4>
+            <div class="form-group">
+                <label for="keywords">キーワード:</label>
+                <input type="text" class="form-control" name="spots[${spotIndex}]" placeholder="カンマ区切りで入力" required>
+            </div>
+        `;
+        container.appendChild(newSpot);
+        spotIndex++;
+    }
 const nodes = new Map();
 const links = [];
 
