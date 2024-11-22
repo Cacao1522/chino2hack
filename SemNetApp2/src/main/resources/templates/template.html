@@ -1,0 +1,18 @@
+
+<!DOCTYPE html>
+<head>
+<meta charset="UTF-8">
+<title>HTML Test</title>
+</head>
+<body>
+<h2>Thymeleafテンプレートのテスト</h2>
+<ol>
+   <li th:text="${data.var}"></li>
+   <li>[[${data.var}]]</li>
+   <li>[[${data.func1()}]]</li>
+   <li>[[${data.func2('fuga')}]]</li>
+   <li>[[${data.var} + ', ' + ${data.func2('arg')}]]</li>
+   <li>[[${new java.util.Date()}]]</li>
+</ol>
+</body>
+</html>
