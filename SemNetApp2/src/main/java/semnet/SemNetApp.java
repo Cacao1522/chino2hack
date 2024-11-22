@@ -2,6 +2,7 @@ package semnet;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.thymeleaf.TemplateEngine;
@@ -109,6 +110,39 @@ public class SemNetApp {
 			model.put("sn", sn);
 			model.put("query", "?x is-a ?y\n?y donot ?z");
 			ctx.render("/semnet.html", model);
+		});
+
+		app.post("/search", ctx -> {
+			String leave = ctx.formParam("leave");
+			String arrive = ctx.formParam("arrive");
+			String time = ctx.formParam("time");
+			// 制限時間のパラメータを数値に変換
+		    double limitedTime;
+		    try {
+		    	limitedTime = Double.parseDouble(time);
+		    } catch (NumberFormatException e) {
+		        ctx.status(400).result("制限時間は数値で入力してください。");
+		        return;
+		    }
+		 // 各観光地のキーワードを受け取る
+		    List<List<String>> keywordsList = new ArrayList<>();
+		    for (int i = 0; ctx.formParam("spots[" + i + "]") != null; i++) {
+		        String keywords = ctx.formParam("spots[" + i + "]");
+		        // カンマ区切りでキーワードを分割してリストに追加
+		        String[] keywordsArray = keywords.split(",");
+		        List<String> spotKeywords = new ArrayList<>();
+		        for (String keyword : keywordsArray) {
+		            spotKeywords.add(keyword.trim()); // 前後の空白を削除して追加
+		        }
+		        keywordsList.add(spotKeywords); // 観光地ごとのキーワードリストを追加
+		    }
+		 // キーワードを表示（デバッグ用）
+		    for (List<String> keyword : keywordsList) {
+		        System.out.println("キーワード: " + keyword);
+		    }
+//		    Map<String, Object> model = new HashMap<>();
+//		    model.put("query", "?x is-a ?y\n?y donot ?z");
+//			ctx.render("/semnet.html", model);
 		});
 	}
 
