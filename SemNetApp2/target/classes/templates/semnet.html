@@ -1,251 +1,316 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
+
 <head>
-<meta charset="UTF-8">
-<title>セマンティックネット</title>
-<!-- Bootstrap CSS -->
-<link rel="stylesheet"
-	href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-<script src="https://d3js.org/d3.v6.min.js"></script>
+    <meta charset="UTF-8">
+    <title>セマンティックネット</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQjOdvRm0QnKiDotdnkl7lf0_4pQEfRt4"></script>
 </head>
+
 <body>
-	<div class="container">
-	<h3>観光地ルート提案</h3>
-		<form action="/search" method="post">
-			<div class="form-group">
-				<label for="leave">出発地名:</label> <input type="text"
-					class="form-control" name="leave" required>
-			</div>
-			<div class="form-group">
-				<label for="arrive">到着地名:</label> <input type="text"
-					class="form-control" name="arrive" required>
-			</div>
-			<div class="form-group">
-				<label for="time">制限時間:</label> <input type="number"
-					class="form-control" name="time" required>
-			</div>
-			<div id="touristSpotsContainer">
-			<div class="touristSpot">
-            <h4>観光地 1</h4>
+    <div class="container">
+        <h3>観光地ルート提案</h3>
+        <form action="/search" method="post">
             <div class="form-group">
-                <label for="keywords">キーワード:</label>
-                <input type="text" class="form-control" name="spots[0]" placeholder="カンマ区切りで入力" required>
+                <label for="leave">出発地名:</label> <input type="text" class="form-control" name="leave" required>
             </div>
-        </div>
-        </div>
-         <button type="button" class="btn btn-secondary" onclick="addTouristSpot()">観光地を追加</button>
-			<button class="btn btn-primary" type="submit">検索</button>
-		</form>
-		<h3>セマンティックネット</h3>
-		<table id="data-table" class="table table-bordered">
-			<thead class="thead-dark">
-				<tr>
-					<th>Tail Node<br />(主語)
-					</th>
-					<th>Link<br />(述語)
-					</th>
-					<th>Head Node<br />(目的語)
-					</th>
-				</tr>
-			</thead>
-			<tbody>
-				<tr th:each="link : ${sn.getLinks()}">
-					<td th:text="${link.getTail()}"></td>
-					<td th:text="${link.getLabel()}"></td>
-					<td th:text="${link.getHead()}"></td>
-					<td>
-						<form action="/deleteFact" method="post" style="display: inline;">
-							<input type="hidden" name="label" th:value="${link.getLabel()}" />
-							<input type="hidden" name="tail" th:value="${link.getTail()}" />
-							<input type="hidden" name="head" th:value="${link.getHead()}" />
-							<button type="submit" class="btn btn-danger btn-sm">削除</button>
-						</form>
-					</td>
-				</tr>
-			</tbody>
-		</table>
+            <div class="form-group">
+                <label for="arrive">到着地名:</label> <input type="text" class="form-control" name="arrive" required>
+            </div>
+            <div class="form-group">
+                <label for="time">制限時間:</label> <input type="number" class="form-control" name="time" required>
+            </div>
+            <div id="touristSpotsContainer">
+                <div class="touristSpot">
+                    <h4>観光地 1</h4>
+                    <div class="form-group">
+                        <label for="keywords">キーワード:</label>
+                        <input type="text" class="form-control" name="spots[0]" placeholder="カンマ区切りで入力" required>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="addTouristSpot()">観光地を追加</button>
+            <button class="btn btn-primary" type="submit">検索</button>
+        </form>
+        <div id="map" style="height: 500px; width: 100%;"></div>
+        <div id="info">移動時間がここに表示されます</div>
+        <h3>セマンティックネット</h3>
+        <table id="data-table" class="table table-bordered">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Tail Node<br />(主語)
+                    </th>
+                    <th>Link<br />(述語)
+                    </th>
+                    <th>Head Node<br />(目的語)
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="link : ${sn.getLinks()}">
+                    <td th:text="${link.getTail()}"></td>
+                    <td th:text="${link.getLabel()}"></td>
+                    <td th:text="${link.getHead()}"></td>
+                    <td>
+                        <form action="/deleteFact" method="post" style="display: inline;">
+                            <input type="hidden" name="label" th:value="${link.getLabel()}" />
+                            <input type="hidden" name="tail" th:value="${link.getTail()}" />
+                            <input type="hidden" name="head" th:value="${link.getHead()}" />
+                            <button type="submit" class="btn btn-danger btn-sm">削除</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
 
-		<h3>質問（Query）</h3>
-		<form action="/semnet" method="post">
-			<div class="form-group">
-				<textarea class="form-control" name="queryStr" rows="4"
-					th:text="${query}"></textarea>
-			</div>
-			<button class="btn btn-primary" type="submit">質問を実行</button>
-		</form>
+        <h3>質問（Query）</h3>
+        <form action="/semnet" method="post">
+            <div class="form-group">
+                <textarea class="form-control" name="queryStr" rows="4" th:text="${query}"></textarea>
+            </div>
+            <button class="btn btn-primary" type="submit">質問を実行</button>
+        </form>
 
-		<h3>結果：</h3>
-		<p th:text="${result}"></p>
-		<h3>新しい事実の追加</h3>
-		<form action="/addFact" method="post">
-			<div class="form-group">
-				<label for="tail">主語 (Tail Node):</label> <input type="text"
-					class="form-control" name="tail" required>
-			</div>
-			<div class="form-group">
-				<label for="link">述語 (Link):</label> <input type="text"
-					class="form-control" name="link" required>
-			</div>
-			<div class="form-group">
-				<label for="head">目的語 (Head Node):</label> <input type="text"
-					class="form-control" name="head" required>
-			</div>
-			<button class="btn btn-primary" type="submit">事実を追加</button>
-		</form>
-	</div>
-	<div id="graph"></div>
-	<script th:inline="javascript">
-	let spotIndex = 1; // 次の観光地インデックス
-	function addTouristSpot() {
-        const container = document.getElementById("touristSpotsContainer");
-        const newSpot = document.createElement("div");
-        newSpot.className = "touristSpot";
-        newSpot.innerHTML = `
+        <h3>結果：</h3>
+        <p th:text="${result}"></p>
+        <h3>新しい事実の追加</h3>
+        <form action="/addFact" method="post">
+            <div class="form-group">
+                <label for="tail">主語 (Tail Node):</label> <input type="text" class="form-control" name="tail" required>
+            </div>
+            <div class="form-group">
+                <label for="link">述語 (Link):</label> <input type="text" class="form-control" name="link" required>
+            </div>
+            <div class="form-group">
+                <label for="head">目的語 (Head Node):</label> <input type="text" class="form-control" name="head" required>
+            </div>
+            <button class="btn btn-primary" type="submit">事実を追加</button>
+        </form>
+    </div>
+    <div id="graph"></div>
+    <script th:inline="javascript">
+        let spotIndex = 1; // 次の観光地インデックス
+        function addTouristSpot() {
+            const container = document.getElementById("touristSpotsContainer");
+            const newSpot = document.createElement("div");
+            newSpot.className = "touristSpot";
+            newSpot.innerHTML = `
             <h4>観光地 ${spotIndex + 1}</h4>
             <div class="form-group">
                 <label for="keywords">キーワード:</label>
                 <input type="text" class="form-control" name="spots[${spotIndex}]" placeholder="カンマ区切りで入力" required>
             </div>
         `;
-        container.appendChild(newSpot);
-        spotIndex++;
-    }
-const nodes = new Map();
-const links = [];
+            container.appendChild(newSpot);
+            spotIndex++;
+        }
+        const nodes = new Map();
+        const links = [];
 
-// テーブルの各行を処理し、リンクとノード情報を抽出
-document.querySelectorAll("#data-table tbody tr").forEach(row => {
-    const cells = row.children;
-    const tail = cells[0].innerText;
-    const label = cells[1].innerText;
-    const head = cells[2].innerText;
+        // テーブルの各行を処理し、リンクとノード情報を抽出
+        document.querySelectorAll("#data-table tbody tr").forEach(row => {
+            const cells = row.children;
+            const tail = cells[0].innerText;
+            const label = cells[1].innerText;
+            const head = cells[2].innerText;
 
-    // ノードがまだ登録されていなければ追加
-    if (!nodes.has(tail)) nodes.set(tail, { id: tail });
-    if (!nodes.has(head)) nodes.set(head, { id: head });
+            // ノードがまだ登録されていなければ追加
+            if (!nodes.has(tail)) nodes.set(tail, { id: tail });
+            if (!nodes.has(head)) nodes.set(head, { id: head });
 
-    // リンクを追加
-    links.push({ source: tail, target: head, label: label });
-});
+            // リンクを追加
+            links.push({ source: tail, target: head, label: label });
+        });
 
-// ノード配列に変換
-const nodesData = Array.from(nodes.values());
+        // ノード配列に変換
+        const nodesData = Array.from(nodes.values());
 
-// D3.jsでグラフを描画
-const width = 1500;
-const height = 800;
-const svg = d3.select("#graph").append("svg")
-    .attr("width", width)
-    .attr("height", height);
+        // D3.jsでグラフを描画
+        const width = 1500;
+        const height = 800;
+        const svg = d3.select("#graph").append("svg")
+            .attr("width", width)
+            .attr("height", height);
 
-// 力学シミュレーションの設定
-const simulation = d3.forceSimulation(nodesData)
-    .force("link", d3.forceLink(links).id(d => d.id).distance(100))
-    .force("charge", d3.forceManyBody().strength(-300))
-    .force("center", d3.forceCenter(width / 2, height / 2));
+        // 力学シミュレーションの設定
+        const simulation = d3.forceSimulation(nodesData)
+            .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+            .force("charge", d3.forceManyBody().strength(-300))
+            .force("center", d3.forceCenter(width / 2, height / 2));
 
-//矢印マーカーの定義
-svg.append("defs").append("marker")
-    .attr("id", "arrow")
-    .attr("viewBox", "0 -5 10 10")
-    .attr("refX", 15)
-    .attr("refY", 0)
-    .attr("markerWidth", 6)
-    .attr("markerHeight", 6)
-    .attr("orient", "auto")
-    .append("path")
-    .attr("d", "M0,-5L10,0L0,5")
-    .attr("fill", "#999");
+        //矢印マーカーの定義
+        svg.append("defs").append("marker")
+            .attr("id", "arrow")
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 15)
+            .attr("refY", 0)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("path")
+            .attr("d", "M0,-5L10,0L0,5")
+            .attr("fill", "#999");
 
-// Linkの描画
-const link = svg.append("g")
-    .attr("class", "links")
-    .selectAll("line")
-    .data(links)
-    .enter().append("line")
-    .attr("stroke", "#999")
-    .attr("stroke-opacity", 0.6)
-    .attr("stroke-width", 2)
-    .attr("marker-end", "url(#arrow)");
+        // Linkの描画
+        const link = svg.append("g")
+            .attr("class", "links")
+            .selectAll("line")
+            .data(links)
+            .enter().append("line")
+            .attr("stroke", "#999")
+            .attr("stroke-opacity", 0.6)
+            .attr("stroke-width", 2)
+            .attr("marker-end", "url(#arrow)");
 
-// Linkラベルの描画
-const linkLabel = svg.append("g")
-    .attr("class", "link-labels")
-    .selectAll("text")
-    .data(links)
-    .enter().append("text")
-    .attr("font-size", 10)
-    .attr("fill", "gray")
-    .text(d => d.label);
+        // Linkラベルの描画
+        const linkLabel = svg.append("g")
+            .attr("class", "link-labels")
+            .selectAll("text")
+            .data(links)
+            .enter().append("text")
+            .attr("font-size", 10)
+            .attr("fill", "gray")
+            .text(d => d.label);
 
-// Nodeの描画
-const node = svg.append("g")
-    .attr("class", "nodes")
-    .selectAll("circle")
-    .data(nodesData)
-    .enter().append("circle")
-    .attr("r", 10)
-    .attr("fill", "lightblue")
-    .call(d3.drag()
-        .on("start", dragStarted)
-        .on("drag", dragged)
-        .on("end", dragEnded)
-    );
+        // Nodeの描画
+        const node = svg.append("g")
+            .attr("class", "nodes")
+            .selectAll("circle")
+            .data(nodesData)
+            .enter().append("circle")
+            .attr("r", 10)
+            .attr("fill", "lightblue")
+            .call(d3.drag()
+                .on("start", dragStarted)
+                .on("drag", dragged)
+                .on("end", dragEnded)
+            );
 
-// Nodeラベルの描画
-const nodeLabel = svg.append("g")
-    .attr("class", "node-labels")
-    .selectAll("text")
-    .data(nodesData)
-    .enter().append("text")
-    .attr("font-size", 12)
-    .attr("fill", "black")
-    .attr("dx", 12)
-    .attr("dy", ".35em")
-    .text(d => d.id);
-// ラベルの表示
-node.append("title")
-    .text(d => d.id);
+        // Nodeラベルの描画
+        const nodeLabel = svg.append("g")
+            .attr("class", "node-labels")
+            .selectAll("text")
+            .data(nodesData)
+            .enter().append("text")
+            .attr("font-size", 12)
+            .attr("fill", "black")
+            .attr("dx", 12)
+            .attr("dy", ".35em")
+            .text(d => d.id);
+        // ラベルの表示
+        node.append("title")
+            .text(d => d.id);
 
-// ノードとリンクの位置を更新
-simulation.on("tick", () => {
-	link
-    .attr("x1", d => d.source.x)
-    .attr("y1", d => d.source.y)
-    .attr("x2", d => d.target.x)
-    .attr("y2", d => d.target.y);
+        // ノードとリンクの位置を更新
+        simulation.on("tick", () => {
+            link
+                .attr("x1", d => d.source.x)
+                .attr("y1", d => d.source.y)
+                .attr("x2", d => d.target.x)
+                .attr("y2", d => d.target.y);
 
-linkLabel
-    .attr("x", d => (d.source.x + d.target.x) / 2)
-    .attr("y", d => (d.source.y + d.target.y) / 2);
+            linkLabel
+                .attr("x", d => (d.source.x + d.target.x) / 2)
+                .attr("y", d => (d.source.y + d.target.y) / 2);
 
-node
-    .attr("cx", d => d.x)
-    .attr("cy", d => d.y);
+            node
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y);
 
-nodeLabel
-    .attr("x", d => d.x)
-    .attr("y", d => d.y);
-});
+            nodeLabel
+                .attr("x", d => d.x)
+                .attr("y", d => d.y);
+        });
 
-//ドラッグイベントの設定
-function dragStarted(event, d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart();
-    d.fx = d.x;
-    d.fy = d.y;
-}
+        //ドラッグイベントの設定
+        function dragStarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
 
-function dragged(event, d) {
-    d.fx = event.x;
-    d.fy = event.y;
-}
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
 
-function dragEnded(event, d) {
-    if (!event.active) simulation.alphaTarget(0);
-    d.fx = null;
-    d.fy = null;
-}
+        function dragEnded(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
 
-</script>
+        let map;
+        let directionsService;
+        let directionsRenderer;
+
+        function initMap() {
+            map = new google.maps.Map(document.getElementById("map"), {
+                center: { lat: 35.157203090619916, lng: 136.92551086446304 }, // 名工大をデフォルトの中心に設定
+                zoom: 8,
+            });
+
+            directionsService = new google.maps.DirectionsService();
+            directionsRenderer = new google.maps.DirectionsRenderer();
+            directionsRenderer.setMap(map);
+
+            // ルートを計算して描画する関数
+            calculateAndDisplayRoute();
+        }
+
+        function calculateAndDisplayRoute() {
+            const start = "名古屋工業大学"; // 出発地
+            const waypoints = [
+                { location: "名古屋城", stopover: true },
+                { location: "熱田神宮", stopover: true },
+                { location: "熱田神宮公園", stopover: true }
+            ]; // 経由地
+            const end = "名古屋工業大学"; // 到着地
+
+            directionsService.route(
+                {
+                    origin: start,
+                    destination: end,
+                    waypoints: waypoints,
+                    travelMode: google.maps.TravelMode.DRIVING,
+                },
+                (response, status) => {
+                    if (status === google.maps.DirectionsStatus.OK) {
+                        directionsRenderer.setDirections(response);
+                        // 移動時間を取得して表示
+                        displayTravelTime(response);
+                    } else {
+                        alert("Directions request failed due to " + status);
+                    }
+                }
+            );
+        }
+        function displayTravelTime(response) {
+            const route = response.routes[0]; // 最初のルートを取得
+            let totalDuration = 0; // 合計移動時間（秒）
+
+            // 全てのlegsをループして時間を計算
+            for (let leg of route.legs) {
+                totalDuration += leg.duration.value; // 秒単位で加算
+            }
+
+            // 時間をフォーマット（秒を時:分形式に変換）
+            const hours = Math.floor(totalDuration / 3600);
+            const minutes = Math.floor((totalDuration % 3600) / 60);
+            const formattedTime = hours > 0
+                ? `${hours}時間${minutes}分`
+                : `${minutes}分`;
+
+            // HTML要素に表示
+            document.getElementById("info").innerText = `移動時間: ${formattedTime}`;
+        }
+
+        // 初期化
+        window.onload = initMap;
+    </script>
 </body>
+
 </html>

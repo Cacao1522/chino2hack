@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.io.IOException;
 
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
@@ -12,6 +13,15 @@ import io.javalin.Javalin;
 import io.javalin.rendering.JavalinRenderer;
 import io.javalin.rendering.template.JavalinThymeleaf;
 
+import org.eclipse.jetty.http.HttpTester.Request;
+import org.eclipse.jetty.http.HttpTester.Response;
+import org.h2.util.json.JSONObject;
+import com.google.maps.GeocodingApi;
+import com.google.maps.model.GeocodingResult;
+import com.google.maps.DirectionsApi;
+import com.google.maps.GeoApiContext;
+import com.google.maps.errors.ApiException;
+import com.google.maps.model.DirectionsResult;
 /**
  * SemNetAppクラス
  */
@@ -32,6 +42,13 @@ public class SemNetApp {
 
 		// JavalinにThymeleafを登録
 		JavalinRenderer.register(new JavalinThymeleaf(templateEngine), ".html");
+
+		// APIキーを設定
+        String apiKey = "AIzaSyBQjOdvRm0QnKiDotdnkl7lf0_4pQEfRt4";
+     // GeoApiContextを作成
+        GeoApiContext context = new GeoApiContext.Builder()
+                .apiKey(apiKey) // APIキーを設定
+                .build();
 
 		// Javalinアプリの作成
 		Javalin app = Javalin.create().start(7000);
@@ -144,6 +161,35 @@ public class SemNetApp {
 //		    model.put("query", "?x is-a ?y\n?y donot ?z");
 //			ctx.render("/semnet.html", model);
 		});
+
+		/*app.get("/route", ctx -> {
+		    String origin = "Tokyo Station";
+		    String destination = "Kyoto Station";
+		    String[] waypoints = {"Nagoya Station", "Osaka Station"}; // 経由地の例
+
+		    try {
+		        // Directions API の呼び出し
+		        DirectionsResult result = DirectionsApi.newRequest(context)
+		                .origin(origin)
+		                .destination(destination)
+		                .waypoints(waypoints)
+		                .optimizeWaypoints(true)
+		                .await();
+
+		        // エンコードされたポリラインをクライアントに送信
+		        if (result.routes != null && result.routes.length > 0) {
+		            String encodedPath = result.routes[0].overviewPolyline.getEncodedPath();
+		            System.out.println("パス：" + encodedPath);
+		            ctx.json(Map.of("encodedPath", encodedPath));
+		        } else {
+		            ctx.status(404).result("No routes found");
+		        }
+		    } catch (Exception e) {
+		        e.printStackTrace();
+		        ctx.status(500).result("Error fetching route: " + e.getMessage());
+		    }
+		});*/
+
 	}
 
 	private static ArrayList<Link> strToQuery(String queryStr) {
