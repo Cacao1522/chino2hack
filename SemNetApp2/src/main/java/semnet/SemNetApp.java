@@ -157,6 +157,21 @@ public class SemNetApp {
 		    for (List<String> keyword : keywordsList) {
 		        System.out.println("キーワード: " + keyword);
 		    }
+		    Search s = new Search(leave, arrive, limitedTime, keywordsList);
+		    s.search();
+			Map<String, Object> model = new HashMap<>();
+			SemanticNet sn = new SemanticNet();
+
+			if (sn.isEmpty(false)) {
+				sn.addInitialLinks();
+			}
+
+			model.put("sn", sn);
+			model.put("result", s.result);
+			model.put("distance", s.maxdist);
+			model.put("totaltime", s.maxtotal);
+			model.put("satisscore", s.maxss);
+			ctx.render("/semnet.html", model);
 //		    Map<String, Object> model = new HashMap<>();
 //		    model.put("query", "?x is-a ?y\n?y donot ?z");
 //			ctx.render("/semnet.html", model);

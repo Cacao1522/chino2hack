@@ -19,8 +19,6 @@ import com.google.maps.errors.ApiException;
 import com.google.maps.model.DirectionsResult;
 
 public class Search {
-    public static void main(String arg[]) {
-        Scanner scanner = new Scanner(System.in);
      // APIキーを設定
         String apiKey = "AIzaSyBQjOdvRm0QnKiDotdnkl7lf0_4pQEfRt4";
      // GeoApiContextを作成
@@ -96,53 +94,7 @@ public class Search {
 
         // 観光地リストを一つのリストにまとめて再帰で処理
         List<List<TouristSpot>> allSpots = new ArrayList<>();
-
-        while (true) {
-            System.out.print("キーワード（空白区切り）：");
-            List<String> inputList = new ArrayList<>();
-            boolean isFInish = false;
-            String line = scanner.nextLine().trim();
-            if (line.contains(".")) {
-                line = line.replace(".", ""); // ピリオドを除去
-                if (!line.isEmpty()) {
-                    inputList = Arrays.asList(line.split("\\s+"));
-                }
-                isFInish = true;
-            } else if (!line.isEmpty()) {
-                inputList = Arrays.asList(line.split("\\s+"));
-            }
-
-            for (TouristSpot spot : touristSpots) {
-                // System.out.println(inputList);
-                spot.setAdjustedSatisfactionScore();
-                for (String keyword : inputList) {
-                    if (spot.getName().equals(keyword)) {
-                        spot.increaseSatisfaction(2);
-                    }
-                    if (spot.getKeywords().contains(keyword)) {
-                        spot.increaseSatisfaction(1);
-                    }
-                }
-                // long matches =
-                // inputList.stream().filter(spot.getKeywords()::contains).count();
-                // spot.increaseSatisfaction((int) matches); // 一致する特徴1つごとに満足度を加算
-                // System.out.println(spot.getKeywords());
-                // System.out.println("New Satisfaction Score: " +
-                // spot.getAdjustedSatisfactionScore());
-            }
-
-            // 満足度で降順ソートし、上位5つを取得
-            List<TouristSpot> topSpots = touristSpots.stream()
-                    .sorted(Comparator.comparingDouble(
-                            TouristSpot::getAdjustedSatisfactionScore).reversed())
-                    .limit(5)
-                    .collect(Collectors.toList());
-            allSpots.add(topSpots);
-            if (isFInish)
-                break;
-        }
-        System.out.println(allSpots);
-        // 出発地と到着地
+     // 出発地と到着地
         String origin = "名古屋工業大学";
         String destination = "名古屋工業大学";
         // 出発地の緯度経度
@@ -151,84 +103,113 @@ public class Search {
         // 到着地の緯度経度
         double arriveLat = 35.157203090619916;
         double arriveLon = 136.92551086446304;
-        try {
-			GeocodingResult[] results = GeocodingApi.geocode(context, origin).await();
-			leaveLat = results[0].geometry.location.lat;
-			leaveLon = results[0].geometry.location.lng;
-			System.out.println("出発地の緯度"+leaveLat);
-			System.out.println("出発地の経度"+leaveLon);
-        } catch (ApiException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		} catch (InterruptedException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO 自動生成された catch ブロック
-			e.printStackTrace();
-		}
-        // 許容時間
+     // 許容時間
         double allowTime = 8;
-        System.out.println("制限時間：" + allowTime);
-        // 組み合わせを生成
-        List<List<TouristSpot>> permutations = new ArrayList<>();
-        generateCombinations(allSpots, permutations, 0, new ArrayList<>());
+     // 現時点の最大値を保存
+        List<TouristSpot> result = new ArrayList<>();
+        double maxdist = -1;
+        double maxtotal = -1;
+        double maxss = -1;
 
-        // 組み合わせごとに距離を計算
-        for (List<TouristSpot> spots : permutations) {
-            List<List<TouristSpot>> orders = generateAllOrders(spots);
-            for (List<TouristSpot> order : orders) {
-                double distance = 0;
-                double totalTime = 0;
-                double ss = 0;
-                double lat1 = leaveLat;
-                double lon1 = leaveLon;
-                for (TouristSpot spot : order) {
-                    double lat2 = spot.getLatitude();
-                    double lon2 = spot.getLongitude();
-                    distance += haversine(lat1, lon1, lat2, lon2);
-                    lat1 = lat2;
-                    lon1 = lon2;
-                    totalTime += spot.getStay();
-                    ss += spot.getAdjustedSatisfactionScore();
-                }
-                distance += haversine(lat1, lon1, arriveLat, arriveLon);
-                System.out.println(order);
-                System.out.println("距離：" + distance);
-                int average_speed = 60; // km/h
-                double K = 1.5; // 補正係数
-                double travelTime = distance * K / average_speed;
-                System.out.println("移動時間：" + travelTime);
-                totalTime += travelTime;
-                System.out.println("合計時間：" + totalTime);
-                System.out.println("満足度：" + ss);
-                if (totalTime <= allowTime) {
-                	String[] waypoints = spots.stream()
-                    .map(TouristSpot::getName) // TouristSpotのgetName()で名前を取得
-                    .toArray(String[]::new);   // 配列に変換
-                	try {
-                        // Directions APIの呼び出し
-                        DirectionsResult result = DirectionsApi.newRequest(context)
-                                .origin(origin)               // 出発地
-                                .destination(destination)     // 目的地
-                                .waypoints(waypoints)         // 経由地
-                                .optimizeWaypoints(true)      // 経路の最適化
-                                .await();
 
-                        // 結果の出力
-                        System.out.println("Route found: ");
-                        System.out.println(result.routes[0].summary);
-                    } catch (ApiException | InterruptedException | IOException e) {
-                        e.printStackTrace();
-                    } finally {
-                        // GeoApiContextを閉じる
-                        context.shutdown();
-                    }
-                    System.exit(0);
-                }
-            }
+        Search (String leave, String arrive, double time, List<List<String>> keywordsLists) {
+        	this.origin = leave;
+        	this.destination = arrive;
+        	this.allowTime = time;
+
+        	for (List<String> inputList : keywordsLists) {
+     		   for (TouristSpot spot : touristSpots) {
+                spot.setAdjustedSatisfactionScore();
+                for (String keyword : inputList) {
+                    if (spot.getName().equals(keyword)) {
+                        spot.increaseSatisfaction(2);
+                    	}
+                    if (spot.getKeywords().contains(keyword)) {
+                        spot.increaseSatisfaction(1);
+                    	}
+                	}
+     		   }
+
+            // 満足度で降順ソートし、上位5つを取得
+            List<TouristSpot> topSpots = touristSpots.stream()
+            		.sorted(Comparator.comparingDouble(TouristSpot::getAdjustedSatisfactionScore).reversed())
+                    .limit(5)
+                    .collect(Collectors.toList());
+            allSpots.add(topSpots);
         }
+        System.out.println(allSpots);
+
+     }
+   public void search() {
+
+
+   try {
+	   System.out.println("出発地"+origin);
+		GeocodingResult[] results = GeocodingApi.geocode(context, origin).await();
+		leaveLat = results[0].geometry.location.lat;
+		leaveLon = results[0].geometry.location.lng;
+		System.out.println("出発地の緯度"+leaveLat);
+		System.out.println("出発地の経度"+leaveLon);
+   } catch (ApiException e) {
+		// TODO 自動生成された catch ブロック
+		e.printStackTrace();
+	} catch (InterruptedException e) {
+		// TODO 自動生成された catch ブロック
+		e.printStackTrace();
+	} catch (IOException e) {
+		// TODO 自動生成された catch ブロック
+		e.printStackTrace();
+	}
+
+   System.out.println("制限時間：" + allowTime);
+   // 組み合わせを生成
+   List<List<TouristSpot>> permutations = new ArrayList<>();
+   generateCombinations(allSpots, permutations, 0, new ArrayList<>());
+
+
+   // 組み合わせごとに距離を計算
+   for (List<TouristSpot> spots : permutations) {
+       List<List<TouristSpot>> orders = generateAllOrders(spots);
+       for (List<TouristSpot> order : orders) {
+           double distance = 0;
+           double totalTime = 0;
+           double ss = 0;
+           double lat1 = leaveLat;
+           double lon1 = leaveLon;
+           for (TouristSpot spot : order) {
+               double lat2 = spot.getLatitude();
+               double lon2 = spot.getLongitude();
+               distance += haversine(lat1, lon1, lat2, lon2);
+               lat1 = lat2;
+               lon1 = lon2;
+               totalTime += spot.getStay();
+               ss += spot.getAdjustedSatisfactionScore();
+           }
+           distance += haversine(lat1, lon1, arriveLat, arriveLon);
+           System.out.println(order);
+           System.out.println("距離：" + distance);
+           int average_speed = 60; // km/h
+           double K = 1.7; // 補正係数
+           double travelTime = distance * K / average_speed;
+           System.out.println("移動時間：" + travelTime);
+           totalTime += travelTime;
+           System.out.println("合計時間：" + totalTime);
+           System.out.println("満足度：" + ss);
+           if (totalTime <= allowTime) {
+        	   if (ss < maxss) { // 終了
+              		return;
+              } else if (maxtotal > totalTime) { // 更新
+           		maxdist = distance;
+           		maxtotal = totalTime;
+           		maxss = ss;
+           		result = order;
+           	}
+
+
+           }
+       }
     }
+  }
 
     // 観光地リストの組み合わせを生成
     public static void generateCombinations(List<List<TouristSpot>> allSpots,
@@ -320,7 +301,7 @@ public class Search {
 
 class TouristSpot {
     private String name; // 観光地の名前
-    private double latitude; // 緯度
+    private double latitude; // 緯度public
     private double longitude; // 経度
     private double satisfactionScore; // 満足度 (1.0 - 5.0)
     private double adjustedSatisfactionScore; // 調整後の満足度
