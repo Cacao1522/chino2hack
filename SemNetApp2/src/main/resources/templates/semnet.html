@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQjOdvRm0QnKiDotdnkl7lf0_4pQEfRt4"></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQjOdvRm0QnKiDotdnkl7lf0_4pQEfRt4&libraries=places"></script>
 </head>
 
 <body>
@@ -15,10 +16,10 @@
         <h3>観光地ルート提案</h3>
         <form action="/search" method="post">
             <div class="form-group">
-                <label for="leave">出発地名:</label> <input type="text" class="form-control" name="leave" required>
+                <label for="leave">出発地名:</label> <input type="text" id="leave" class="form-control" name="leave" required>
             </div>
             <div class="form-group">
-                <label for="arrive">到着地名:</label> <input type="text" class="form-control" name="arrive" required>
+                <label for="arrive">到着地名:</label> <input type="text" id="arrive" class="form-control" name="arrive" required>
             </div>
             <div class="form-group">
                 <label for="time">制限時間:</label> <input type="number" class="form-control" name="time" required>
@@ -309,7 +310,52 @@
         }
 
         // 初期化
-        window.onload = initMap;
+        //window.onload = initMap;
+   function initialize() {
+      // 出発地のAutocomplete設定
+      const leaveInput = document.getElementById('leave');
+      const leaveAutocomplete = new google.maps.places.Autocomplete(leaveInput, {
+        types: ['establishment'], // 施設名に限定
+        componentRestrictions: { country: 'jp' } // 日本国内に限定
+      });
+
+      // 到着地のAutocomplete設定
+      const arriveInput = document.getElementById('arrive');
+      const arriveAutocomplete = new google.maps.places.Autocomplete(arriveInput, {
+        types: ['establishment'], // 施設名に限定
+        componentRestrictions: { country: 'jp' } // 日本国内に限定
+      });
+
+      // 出発地が選択された時の処理
+      /*leaveAutocomplete.addListener('place_changed', function () {
+        const place = leaveAutocomplete.getPlace();
+        if (place.geometry) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          console.log('出発地名:', place.name);
+          console.log('住所:', place.formatted_address);
+          console.log('緯度:', lat, '経度:', lng);
+        } else {
+          console.log('出発地情報が取得できませんでした');
+        }
+      });*/
+
+      // 到着地が選択された時の処理
+      /*arriveAutocomplete.addListener('place_changed', function () {
+        const place = arriveAutocomplete.getPlace();
+        if (place.geometry) {
+          const lat = place.geometry.location.lat();
+          const lng = place.geometry.location.lng();
+          console.log('到着地名:', place.name);
+          console.log('住所:', place.formatted_address);
+          console.log('緯度:', lat, '経度:', lng);
+        } else {
+          console.log('到着地情報が取得できませんでした');
+        }
+      });*/
+    }
+
+    window.onload = initialize;
     </script>
 </body>
 
