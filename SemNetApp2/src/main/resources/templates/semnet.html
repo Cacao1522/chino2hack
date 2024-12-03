@@ -9,11 +9,105 @@
     <script src="https://d3js.org/d3.v6.min.js"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQjOdvRm0QnKiDotdnkl7lf0_4pQEfRt4"></script>
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBQjOdvRm0QnKiDotdnkl7lf0_4pQEfRt4&libraries=places"></script>
+	<style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .card-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .card {
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 15px;
+            margin: 10px 0;
+
+            text-align: center;
+            background-color: #f9f9f9;
+        }
+        .arrow {
+		    display: flex; /* 中央揃えのためにFlexboxを使用 */
+		    justify-content: center; /* 水平方向に中央揃え */
+		    align-items: center; /* 垂直方向に中央揃え */
+		    margin: 10px 0;
+		    width: 100%; /* 親要素の幅を基準にする */
+		}
+        .arrow img {
+            width: 50px;
+            height: auto;
+        }
+    </style>
 </head>
 
 <body>
     <div class="container">
         <h3>観光地ルート提案</h3>
+        <table class="table table-bordered">
+	<thead class="thead-dark">
+	  <tr>
+	    <th>観光地</th>
+	    <th>できること</th>
+	  </tr>
+	</thead>
+	<tbody>
+	  <tr th:each="data : ${spotActivity}">
+	    <td th:text="${data[0]}"></td>
+	    <td th:text="${data[1]}"></td>
+	  </tr>
+	</tbody>
+      </table>
+
+		<p style="margin-top: 50px;margin-bottom: 10px;">
+			<h4>行きたい観光地ややりたいこと</h4>
+		</p>
+	    <form action="/travel-want" method="post">
+	    <select name="spotStr" size="5" multiple>
+	  	<tr th:each="spot : ${spotList}">
+	  	　<option th:text="${spot.name}"></option>
+	  	</tr>
+	    </select>
+
+	    <select name="doStr" size="5" multiple>
+	  	<tr th:each="do : ${allActivity}">
+	  	　<option th:text="${do}"></option>
+	  	</tr>
+	    </select>
+	    <p style="margin-top: 10px">
+			<h5>出発地点</h5>
+		</p>
+		<form action="/travel-want" method="post">
+		<select name="startStr" size="5">
+		<tr th:each="spot : ${spotList}">
+		　<option th:text="${spot.name}"></option>
+		</tr>
+		</select>
+
+		<p style="margin-top: 10px">
+			<h5>到着地点</h5>
+		</p>
+		<form action="/travel-want" method="post">
+		<select name="goalStr" size="5">
+		<tr th:each="spot : ${spotList}">
+		　<option th:text="${spot.name}"></option>
+		</tr>
+		</select>
+
+	  <button class="btn btn-warning" type="submit">
+	    決定
+	  </button>
+	    </form>
+
+      <h3>結果：</h3>
+	  <tr th:each="line: ${result}">
+	    <td><span th:text="${line}"></span><br></td></tr>
+
+
+
         <form action="/search" method="post">
             <div class="form-group">
                 <label for="leave">出発地名:</label> <input type="text" id="leave" class="form-control" name="leave" required>
@@ -36,8 +130,35 @@
             <button type="button" class="btn btn-secondary" onclick="addTouristSpot()">観光地を追加</button>
             <button class="btn btn-primary" type="submit">検索</button>
         </form>
+        <div th:if="${origin != null}">
+        <h2>検索結果</h2>
+        <div class="card-container">
+        <!-- 観光地リスト -->
+        <div class="card">
+                <h2 th:text="${origin}">出発地名</h2>
+        </div>
+        <div class="arrow">
+                <img src="/images/arrow.jpg" alt="→">
+            </div>
+        <div th:each="spot, iterStat : ${result}">
+            <div class="card">
+                <h2><a th:href="@{/spot/{name}(name=${spot.name})}" th:text="${spot.name}">観光地名</a></h2>
+                <p>満足度：<span th:text="${spot.satisfactionScore}"></span></p>
+                <p>滞在時間：<span th:text="${spot.stay}"></span> 時間</p>
+            </div>
+            <div class="arrow">
+                <img src="/images/arrow.jpg" alt="→">
+                <p>移動時間：<span th:text="${movetime[iterStat.index]}"></span> 分</p>
+            </div>
+        </div>
+        <div class="card">
+                <h2 th:text="${destination}">到着地名</h2>
+        </div>
+    </div>
+
         <div id="map" style="height: 500px; width: 100%;"></div>
         <div id="info">移動時間がここに表示されます</div>
+       </div>
         <h3>セマンティックネット</h3>
         <table id="data-table" class="table table-bordered">
             <thead class="thead-dark">
@@ -313,7 +434,7 @@
         //window.onload = initMap;
    function initialize() {
       // 出発地のAutocomplete設定
-      const leaveInput = document.getElementById('leave');
+      /*const leaveInput = document.getElementById('leave');
       const leaveAutocomplete = new google.maps.places.Autocomplete(leaveInput, {
         types: ['establishment'], // 施設名に限定
         componentRestrictions: { country: 'jp' } // 日本国内に限定
@@ -324,7 +445,7 @@
       const arriveAutocomplete = new google.maps.places.Autocomplete(arriveInput, {
         types: ['establishment'], // 施設名に限定
         componentRestrictions: { country: 'jp' } // 日本国内に限定
-      });
+      });*/
 
       // 出発地が選択された時の処理
       /*leaveAutocomplete.addListener('place_changed', function () {

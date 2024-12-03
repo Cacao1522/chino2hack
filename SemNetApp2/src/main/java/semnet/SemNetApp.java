@@ -12,6 +12,11 @@ import org.thymeleaf.templateresolver.ClassLoaderTemplateResolver;
 import io.javalin.Javalin;
 import io.javalin.rendering.JavalinRenderer;
 import io.javalin.rendering.template.JavalinThymeleaf;
+import planner.DBsubstitute;
+import planner.DataBaseDAO;
+import planner.Problem;
+import planner.TravelPlanningProblem2;
+import planner.TravelPlanner;
 
 import org.eclipse.jetty.http.HttpTester.Request;
 import org.eclipse.jetty.http.HttpTester.Response;
@@ -51,7 +56,11 @@ public class SemNetApp {
                 .build();
 
 		// Javalinアプリの作成
-		Javalin app = Javalin.create().start(7000);
+        Javalin app = Javalin.create(config -> {
+            // 静的ファイルのルートディレクトリを指定
+            config.staticFiles.add("/public"); // src/main/resources/public をマッピング
+        }).start(7000);
+
 		app.get("/semnet", ctx -> {
 			Map<String, Object> model = new HashMap<>();
 			String queryStr = ctx.queryParam("queryStr");
@@ -70,6 +79,11 @@ public class SemNetApp {
 				queryStr = "?x is-a ?y\n?y donot ?z";
 			}
 			model.put("query", queryStr);
+	            //modelをhtmlに持って行くことで変数代入
+			DataBaseDAO.initializeDatabase();
+			model.put("spotActivity", DataBaseDAO.getSpotActivity());
+			model.put("allActivity", DataBaseDAO.allActivity());
+			model.put("spotList", DataBaseDAO.getSpotList());
 			ctx.render("/semnet.html", model);
 		});
 
@@ -90,9 +104,49 @@ public class SemNetApp {
 				model.put("result", result);
 			}
 			model.put("query", queryStr);
+			model.put("spotActivity", DataBaseDAO.getSpotActivity());
+			model.put("allActivity", DataBaseDAO.allActivity());
+			model.put("spotList", DataBaseDAO.getSpotList());
 			ctx.render("/semnet.html", model);
 		});
 
+		app.post("/travel-want", ctx -> {
+			//modelの保存
+            Map<String, Object> model = new HashMap<>();
+            SemanticNet sn = new SemanticNet();
+
+			if (sn.isEmpty(false)) {
+				sn.addInitialLinks();
+			}
+			model.put("sn", sn);
+
+            String startStr = ctx.formParam("startStr");
+            String goalStr = ctx.formParam("goalStr");
+
+            if(startStr != null && goalStr != null) {
+	            Object[] spotStr = ctx.formParams("spotStr").toArray();
+	            Object[] doStr = ctx.formParams("doStr").toArray();
+	            List<String> visitList = new ArrayList<>();
+	            List<String> doList = new ArrayList<>();
+	            for(var s:spotStr) {
+	            	visitList.add((String)s);
+	            }
+	            for(var s:doStr) {
+	            	doList.add((String)s);
+	            }
+	    		Problem p = new TravelPlanningProblem2(startStr, goalStr, visitList, doList);
+	    		DataBaseDAO.initializeDatabase();
+	    		var result = new TravelPlanner(p,DataBaseDAO.getSpots()).solve();
+
+	            model.put("result", result);
+            } else {
+            	model.put("result", List.of("出発地点と終着地点は必ず入力してください。"));
+            }
+            model.put("spotActivity", DataBaseDAO.getSpotActivity());
+			model.put("allActivity", DataBaseDAO.allActivity());
+			model.put("spotList", DataBaseDAO.getSpotList());
+            ctx.render("/semnet.html", model);
+        });
 		app.post("/addFact", ctx -> {
 			String tail = ctx.formParam("tail");
 			String link = ctx.formParam("link");
@@ -108,6 +162,9 @@ public class SemNetApp {
 			Map<String, Object> model = new HashMap<>();
 			model.put("sn", sn);
 			model.put("query", "?x is-a ?y\n?y donot ?z");
+			model.put("spotActivity", DataBaseDAO.getSpotActivity());
+			model.put("allActivity", DataBaseDAO.allActivity());
+			model.put("spotList", DataBaseDAO.getSpotList());
 			ctx.render("/semnet.html", model);
 		});
 
@@ -126,6 +183,9 @@ public class SemNetApp {
 			Map<String, Object> model = new HashMap<>();
 			model.put("sn", sn);
 			model.put("query", "?x is-a ?y\n?y donot ?z");
+			model.put("spotActivity", DataBaseDAO.getSpotActivity());
+			model.put("allActivity", DataBaseDAO.allActivity());
+			model.put("spotList", DataBaseDAO.getSpotList());
 			ctx.render("/semnet.html", model);
 		});
 
@@ -165,17 +225,33 @@ public class SemNetApp {
 			if (sn.isEmpty(false)) {
 				sn.addInitialLinks();
 			}
-
+			System.out.println(s.result);
 			model.put("sn", sn);
+			model.put("origin", leave);
+			model.put("destination", arrive);
 			model.put("result", s.result);
 			model.put("distance", s.maxdist);
 			model.put("totaltime", s.maxtotal);
 			model.put("satisscore", s.maxss);
+			model.put("movetime", s.optimalTravelTimes);
+			model.put("spotActivity", DataBaseDAO.getSpotActivity());
+			model.put("allActivity", DataBaseDAO.allActivity());
+			model.put("spotList", DataBaseDAO.getSpotList());
 			ctx.render("/semnet.html", model);
 //		    Map<String, Object> model = new HashMap<>();
 //		    model.put("query", "?x is-a ?y\n?y donot ?z");
 //			ctx.render("/semnet.html", model);
 		});
+		app.get("/spot/{name}", ctx -> {
+		    String name = ctx.pathParam("name");
+		    TouristSpot spot = getTouristSpotByName(name); // 観光地名で観光地を検索
+		    if (spot != null) {
+		        ctx.render("/spot-detail.html", Map.of("spot", spot));
+		    } else {
+		        ctx.status(404).result("観光地が見つかりません");
+		    }
+		});
+
 
 		/*app.get("/route", ctx -> {
 		    String origin = "Tokyo Station";
@@ -206,7 +282,15 @@ public class SemNetApp {
 		});*/
 
 	}
-
+	// 名前で観光地を取得するヘルパーメソッド
+	private static TouristSpot getTouristSpotByName(String name) {
+		Search search = new Search();
+	    // データソースから検索（ここでは例としてメモリ内データ）
+	    return search.touristSpots.stream()
+	        .filter(spot -> spot.getName().equals(name))
+	        .findFirst()
+	        .orElse(null);
+	}
 	private static ArrayList<Link> strToQuery(String queryStr) {
 		ArrayList<Link> query = new ArrayList<>();
 		if (queryStr != null) {

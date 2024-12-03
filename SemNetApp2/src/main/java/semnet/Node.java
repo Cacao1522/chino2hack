@@ -1,6 +1,7 @@
 package semnet;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 class Node {
 	String name;
@@ -10,10 +11,13 @@ class Node {
 	// 自分に入ってくるリンク
 	ArrayList<Link> arriveAtMeLinks;
 
+	// 数値プロパティ（滞在時間、料金など）
+    HashMap<String, Double> numericProperties;
 	public Node(String theName) {
 		name = theName;
 		departFromMeLinks = new ArrayList<Link>();
 		arriveAtMeLinks = new ArrayList<Link>();
+		numericProperties = new HashMap<>();
 	}
 
 	public ArrayList<Node> getISATails() {

@@ -27,7 +27,7 @@ public class Search {
                 .build();
         // 観光地リスト（例としてfirst, second, third）
         // 満足度が高い順にソートされている想定
-        List<TouristSpot> touristSpots = Arrays.asList(
+        public List<TouristSpot> touristSpots = Arrays.asList(
                 new TouristSpot(
                         "名古屋城",
                         35.18493421439098,
@@ -110,11 +110,12 @@ public class Search {
         double maxdist = -1;
         double maxtotal = -1;
         double maxss = -1;
+        List<Double> optimalTravelTimes = null; // 各観光地間の移動時間を記録
 
 
         Search (String leave, String arrive, double time, List<List<String>> keywordsLists) {
-        	this.origin = leave;
-        	this.destination = arrive;
+//        	this.origin = leave;
+//        	this.destination = arrive;
         	this.allowTime = time;
 
         	for (List<String> inputList : keywordsLists) {
@@ -140,6 +141,7 @@ public class Search {
         System.out.println(allSpots);
 
      }
+     Search() {}
    public void search() {
 
 
@@ -162,105 +164,103 @@ public class Search {
 	}
 
    System.out.println("制限時間：" + allowTime);
-   // 組み合わせを生成
-   List<List<TouristSpot>> permutations = new ArrayList<>();
-   generateCombinations(allSpots, permutations, 0, new ArrayList<>());
+
+   int average_speed = 60; // km/h
+   double K = 2.0; // 補正係数
+
+   while (!allSpots.isEmpty()) {
+	    List<List<TouristSpot>> allPlans = new ArrayList<>();
+	    generateAllPlans(allSpots, allPlans, 0, new ArrayList<>());
+
+	    boolean foundPlan = false;
 
 
-   // 組み合わせごとに距離を計算
-   for (List<TouristSpot> spots : permutations) {
-       List<List<TouristSpot>> orders = generateAllOrders(spots);
-       for (List<TouristSpot> order : orders) {
-           double distance = 0;
-           double totalTime = 0;
-           double ss = 0;
-           double lat1 = leaveLat;
-           double lon1 = leaveLon;
-           for (TouristSpot spot : order) {
-               double lat2 = spot.getLatitude();
-               double lon2 = spot.getLongitude();
-               distance += haversine(lat1, lon1, lat2, lon2);
-               lat1 = lat2;
-               lon1 = lon2;
-               totalTime += spot.getStay();
-               ss += spot.getAdjustedSatisfactionScore();
-           }
-           distance += haversine(lat1, lon1, arriveLat, arriveLon);
-           System.out.println(order);
-           System.out.println("距離：" + distance);
-           int average_speed = 60; // km/h
-           double K = 1.7; // 補正係数
-           double travelTime = distance * K / average_speed;
-           System.out.println("移動時間：" + travelTime);
-           totalTime += travelTime;
-           System.out.println("合計時間：" + totalTime);
-           System.out.println("満足度：" + ss);
-           if (totalTime <= allowTime) {
-        	   if (ss < maxss) { // 終了
-              		return;
-              } else if (maxtotal > totalTime) { // 更新
-           		maxdist = distance;
-           		maxtotal = totalTime;
-           		maxss = ss;
-           		result = order;
-           	}
+	    for (List<TouristSpot> order : allPlans) {
+	        double distance = 0;
+	        double totalTime = 0;
+	        double ss = 0;
+	        double lat1 = leaveLat;
+	        double lon1 = leaveLon;
+
+	        List<Double> travelTimes = new ArrayList<>(); // 各区間の移動時間を記録
+
+	        for (TouristSpot spot : order) {
+	            double lat2 = spot.getLatitude();
+	            double lon2 = spot.getLongitude();
+	            double segmentDistance = haversine(lat1, lon1, lat2, lon2);
+	            distance += segmentDistance;
+	            lat1 = lat2;
+	            lon1 = lon2;
+
+	            // 各区間の移動時間を計算して記録
+
+	            double segmentTravelTime = segmentDistance * K / average_speed;
+	            travelTimes.add(segmentTravelTime);
+
+	            totalTime += spot.getStay();
+	            ss += spot.getAdjustedSatisfactionScore();
+	        }
+
+	        // 最後の区間（ゴール地点への移動時間）
+	        double segmentDistance = haversine(lat1, lon1, arriveLat, arriveLon);
+	        distance += segmentDistance;
+	        double finalTravelTime = segmentDistance * K / 60; // ゴール地点への移動時間
+	        travelTimes.add(finalTravelTime);
+
+	        totalTime += travelTimes.stream().mapToDouble(Double::doubleValue).sum(); // 合計移動時間
+
+	        if (totalTime <= allowTime) {
+	            foundPlan = true;
+	            if (ss > maxss || (ss == maxss && maxtotal > totalTime)) {
+	                maxdist = distance;
+	                maxtotal = totalTime;
+	                maxss = ss;
+	                result = order;
+	                optimalTravelTimes = new ArrayList<>(travelTimes); // 最適プランの移動時間を記録
+	            }
+	        }
+	    }
+
+	    if (foundPlan) {
+	        break; // プランが見つかった場合、探索終了
+	    } else {
+	        System.out.println("制限時間内に終わるプランが見つかりませんでした。スポットリストを縮小します。");
+	        allSpots.remove(allSpots.size() - 1); // 末尾のリストを削除
+	    }
+	}
+
+	if (result == null) {
+	    System.out.println("全てのプランで制限時間を満たすものが見つかりませんでした。");
+	} else {
+	    System.out.println("最適なプランが見つかりました: " + result);
+	    System.out.println("総距離: " + maxdist);
+	    System.out.println("総時間: " + maxtotal);
+	    System.out.println("満足度: " + maxss);
+	    System.out.println("各区間の移動時間: " + optimalTravelTimes);
+	}
+
+   }
+	// 組み合わせと順列を一括生成する再帰関数
+	public static void generateAllPlans(
+	        List<List<TouristSpot>> allSpots,
+	        List<List<TouristSpot>> allPlans,
+	        int index,
+	        List<TouristSpot> current) {
+	    if (index == allSpots.size()) {
+	        allPlans.add(new ArrayList<>(current));
+	        return;
+	    }
+
+	    for (TouristSpot spot : allSpots.get(index)) {
+	        if (!current.contains(spot)) { // 重複を防ぐ
+	            current.add(spot);
+	            generateAllPlans(allSpots, allPlans, index + 1, current);
+	            current.remove(current.size() - 1); // 戻す
+	        }
+	    }
+	}
 
 
-           }
-       }
-    }
-  }
-
-    // 観光地リストの組み合わせを生成
-    public static void generateCombinations(List<List<TouristSpot>> allSpots,
-            List<List<TouristSpot>> permutations,
-            int index, List<TouristSpot> current) {
-        if (index == allSpots.size()) {
-            // 組み合わせが完成したらリストに追加
-            permutations.add(new ArrayList<>(current));
-            return;
-        }
-
-        // 現在のリストから観光地を優先的に選んで次のリストへ
-        for (TouristSpot spot : allSpots.get(index)) {
-            if (current.contains(spot)) {
-                continue; // 既に含まれている観光地をスキップ
-            }
-            current.add(spot);
-            generateCombinations(allSpots, permutations, index + 1, current);
-            current.remove(current.size() - 1); // 戻るためにリストを元に戻す
-        }
-    }
-
-    // 順列を生成するメソッド（深さ優先探索）
-    public static List<List<TouristSpot>> generateAllOrders(List<TouristSpot> spots) {
-        List<List<TouristSpot>> result = new ArrayList<>();
-        generateOrdersHelper(spots, 0, result);
-        return result;
-    }
-
-    // 順列を生成する再帰的なヘルパーメソッド
-    private static void generateOrdersHelper(List<TouristSpot> spots, int start, List<List<TouristSpot>> result) {
-        if (start == spots.size() - 1) {
-            result.add(new ArrayList<>(spots));
-            return;
-        }
-
-        for (int i = start; i < spots.size(); i++) {
-            // swap start と i
-            swap(spots, start, i);
-            generateOrdersHelper(spots, start + 1, result);
-            // swap back
-            swap(spots, start, i);
-        }
-    }
-
-    // リストの要素を交換するヘルパーメソッド
-    private static void swap(List<TouristSpot> spots, int i, int j) {
-        TouristSpot temp = spots.get(i);
-        spots.set(i, spots.get(j));
-        spots.set(j, temp);
-    }
 
     // 地球の半径 (km)
     private static final double EARTH_RADIUS = 6371.0;
