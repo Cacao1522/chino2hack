@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <title>セマンティックネット</title>
+<style>
+.tourist-spot-detail {
+    margin: 20px;
+    padding: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    text-align: center;
+}
+.tourist-spot-detail img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+}
+</style>
+</head>
+<div class="tourist-spot-detail">
+    <h1 th:text="${spot.name}">観光地名</h1>
+
+    <p>満足度：<span th:text="${spot.satisfactionScore}"></span></p>
+    <p>滞在時間：<span th:text="${spot.stay}"></span> 時間</p>
+	<p>観光地の画像</p>
+    <p>説明文</p>
+<p>料金： 円</p>
+    <p>公式サイト：</p>
+    <h3>できること</h3>
+
+    <h3>近い観光地</h3>
+
+
+</div>

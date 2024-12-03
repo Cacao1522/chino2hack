@@ -14,7 +14,22 @@ import java.util.StringTokenizer;
  * SemanticNetクラス
  */
 public class SemanticNet {
+	/*public static void main(String[] args) {
+		SemanticNet sn = new SemanticNet();
+	    sn.addInitialLinks();
 
+	    // Linkオブジェクトを作成
+	    ArrayList<Link> queries = new ArrayList<>();
+	    queries.add(new Link("hobby", "Kaoru", "cardgame", sn));
+
+	    // 数値条件を設定（例えば、ageが20以上）
+	    HashMap<String, Double> numericConditions = new HashMap<>();
+	    numericConditions.put("age", 20.0);
+
+	    // クエリ実行
+	    String result = sn.query(queries);
+	    System.out.println(result);
+	}*/
 	private ArrayList<Node> nodes; // Nodeのリスト
 	private HashMap<String, Node> nodesNameTable; // Node名で検索できるテーブル
 
@@ -107,18 +122,13 @@ public class SemanticNet {
 	}
 
 	public void addInitialLinks() {
-		addLink(new Link("is-a", "cardgame", "esports", this));
-		addLink(new Link("is-a", "Kaoru", "NIT-student", this));
-		addLink(new Link("speciality", "Kaoru", "AI", this));
-		addLink(new Link("is-a", "yaris", "car", this));
-		addLink(new Link("has-a", "car", "engine", this));
-		addLink(new Link("hobby", "Kaoru", "cardgame", this));
-		addLink(new Link("father", "Kaoru", "Hiroaki", this));
-		addLink(new Link("mother", "Kaoru", "Jyunko", this));
-		addLink(new Link("brother", "Kaoru", "Tsubasa", this));
-		addLink(new Link("own", "Hiroaki", "yaris", this));
-		addLink(new Link("is-a", "NIT-student", "student", this));
-		addLink(new Link("donot", "student", "sport", this));
+		addLink(new Link("満足度", "名古屋城", "4", this));
+		addLink(new Link("満足度", "犬山城", "3.5", this));
+		addLink(new Link("料金", "名古屋城", "1000", this));
+		addLink(new Link("料金", "犬山城", "800", this));
+		addLink(new Link("カテゴリー", "犬山城", "城", this));
+		addLink(new Link("カテゴリー", "名古屋城", "城", this));
+		addLink(new Link("近い", "名古屋城", "金シャチ横丁", this));
 	}
 
 	public String query(ArrayList<Link> queries) {
@@ -276,13 +286,40 @@ class Matcher {
 	}
 
 	boolean tokenMatching(String token1, String token2) {
-		// System.out.println(token1+"<->"+token2);
+
+		System.out.println(token1+"<->"+token2);
 		if (token1.equals(token2))
 			return true;
 		if (var(token1) && !var(token2))
 			return varMatching(token1, token2);
 		if (!var(token1) && var(token2))
 			return varMatching(token2, token1);
+		// 数値と不等号のマッチング処理
+		String[] numericTokens = token1.split("(?=[<>]=?)|(?<=[<>]=?)");
+		System.out.println(numericTokens);
+		if (numericTokens.length == 2) {
+			// 比較演算子を取得
+			String operator = numericTokens[0];
+			System.out.println(operator);
+			// 数値を取得
+			Double value1 = Double.parseDouble(numericTokens[1]);
+			Double value2 = Double.parseDouble(token2);
+			System.out.println(value1);
+			System.out.println(value2);
+			// 不等号に基づいて比較
+		    switch (operator) {
+		        case "<":
+		            return value2 < value1;
+		        case ">":
+		            return value2 > value1;
+		        case "<=":
+		            return value2 <= value1;
+		        case ">=":
+		            return value2 >= value1;
+		        default:
+		            return value1.equals(value2);
+		    }
+	    }
 		return false;
 	}
 
