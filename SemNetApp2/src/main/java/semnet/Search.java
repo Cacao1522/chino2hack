@@ -110,7 +110,7 @@ public class Search {
         double maxdist = -1;
         double maxtotal = -1;
         double maxss = -1;
-        List<Double> optimalTravelTimes = null; // 各観光地間の移動時間を記録
+        List<Integer> optimalTravelTimes = null; // 各観光地間の移動時間を記録
 
 
         Search (String leave, String arrive, double time, List<List<String>> keywordsLists) {
@@ -208,7 +208,7 @@ public class Search {
 	        travelTimes.add(finalTravelTime);
 
 	        totalTime += travelTimes.stream().mapToDouble(Double::doubleValue).sum(); // 合計移動時間
-
+	        //System.out.println(totalTime);
 	        if (totalTime <= allowTime) {
 	            foundPlan = true;
 	            if (ss > maxss || (ss == maxss && maxtotal > totalTime)) {
@@ -216,7 +216,9 @@ public class Search {
 	                maxtotal = totalTime;
 	                maxss = ss;
 	                result = order;
-	                optimalTravelTimes = new ArrayList<>(travelTimes); // 最適プランの移動時間を記録
+	                optimalTravelTimes = travelTimes.stream() // 最適プランの移動時間を記録
+	                        .map(time -> (int) (time * 60)) // 時間を分に変換し、Integer に変換
+	                        .collect(Collectors.toList());
 	            }
 	        }
 	    }

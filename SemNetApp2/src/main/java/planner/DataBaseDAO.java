@@ -293,11 +293,17 @@ public class DataBaseDAO {
 
 class Spot{
 	String name;
-	int cost;
-	int time;
+	int cost; // 料金
+	int time; // 滞在時間
 	double latitude;
 	double longitude;
 	HashMap<String, Activity> activityMap;
+	double satisfactionScore; // 満足度 (0.0 - 5.0)
+	double adjustedSatisfactionScore; // 調整後の満足度
+	List<String> keywords; // キーワード（例: "遊園地", "歴史"）
+	String link; // 画像へのリンク
+	String detail; // 説明文
+	String site; // 公式サイトへのリンク
 	Spot(String name, int cost, int time, double lat, double lon, HashMap<String, Activity> activityMap){
 		this.name = name;
 		this.cost = cost;
