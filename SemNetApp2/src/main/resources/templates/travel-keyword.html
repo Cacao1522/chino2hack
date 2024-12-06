@@ -52,89 +52,33 @@
 </head>
 
 <body>
+
     <div class="container">
+    <a href="/">行きたい場所やりたいことから提案</a>
         <h3>観光地ルート提案</h3>
-        <table class="table table-bordered">
-	<thead class="thead-dark">
-	  <tr>
-	    <th>観光地</th>
-	    <th>できること</th>
-	  </tr>
-	</thead>
-	<tbody>
-	  <tr th:each="data : ${spotActivity}">
-	    <td th:text="${data[0]}"></td>
-	    <td th:text="${data[1]}"></td>
-	  </tr>
-	</tbody>
-      </table>
 
-		<p style="margin-top: 50px;margin-bottom: 10px;">
-			<h4>行きたい観光地ややりたいこと</h4>
-		</p>
-	    <form action="/travel-want" method="post">
-	    <select name="spotStr" size="5" multiple>
-	  	<tr th:each="spot : ${spotList}">
-	  	　<option th:text="${spot.name}"></option>
-	  	</tr>
-	    </select>
-
-	    <select name="doStr" size="5" multiple>
-	  	<tr th:each="do : ${allActivity}">
-	  	　<option th:text="${do}"></option>
-	  	</tr>
-	    </select>
-	    <p style="margin-top: 10px">
-			<h5>出発地点</h5>
-		</p>
-		<form action="/travel-want" method="post">
-		<select name="startStr" size="5">
-		<tr th:each="spot : ${spotList}">
-		　<option th:text="${spot.name}"></option>
-		</tr>
-		</select>
-
-		<p style="margin-top: 10px">
-			<h5>到着地点</h5>
-		</p>
-		<form action="/travel-want" method="post">
-		<select name="goalStr" size="5">
-		<tr th:each="spot : ${spotList}">
-		　<option th:text="${spot.name}"></option>
-		</tr>
-		</select>
-
-	  <button class="btn btn-warning" type="submit">
-	    決定
-	  </button>
-	    </form>
-
-      <h3>結果：</h3>
-	  <tr th:each="line: ${result}">
-	    <td><span th:text="${line}"></span><br></td></tr>
-
-
-
-        <form action="/search" method="post">
+        <form action="/travel-keyword" method="post">
             <div class="form-group">
-                <label for="leave">出発地名:</label> <input type="text" id="leave" class="form-control" name="leave" required>
+                <label for="leave">出発地名:</label> <input type="text" id="leave" class="form-control" name="leave" th:value="${leave}" required>
             </div>
             <div class="form-group">
-                <label for="arrive">到着地名:</label> <input type="text" id="arrive" class="form-control" name="arrive" required>
+                <label for="arrive">到着地名:</label> <input type="text" id="arrive" class="form-control" name="arrive" th:value="${arrive}" required>
             </div>
             <div class="form-group">
-                <label for="time">制限時間:</label> <input type="number" class="form-control" name="time" required>
+                <label for="time">制限時間:</label> <input type="number" class="form-control" name="time" th:value="${time}" required>
             </div>
             <div id="touristSpotsContainer">
-                <div class="touristSpot">
+	        	<div class="touristSpot">
                     <h4>観光地 1</h4>
                     <div class="form-group">
                         <label for="keywords">キーワード:</label>
-                        <input type="text" class="form-control" name="spots[0]" placeholder="カンマ区切りで入力" required>
+                        <input type="text" class="form-control" name="spots[0]" placeholder="空白区切りで入力" th:value="${keywords0}" required>
                     </div>
-                </div>
-            </div>
-            <button type="button" class="btn btn-secondary" onclick="addTouristSpot()">観光地を追加</button>
+	    		</div>
+			</div>
+
+            <button type="button" class="btn btn-secondary" onclick="addTouristSpot(/*[[${len}]]*/)">観光地を追加</button>
+            <button type="button" class="btn btn-danger" onclick="removeLastSpot()">末尾の観光地を削除</button>
             <button class="btn btn-primary" type="submit">検索</button>
         </form>
         <div th:if="${origin != null}">
@@ -225,21 +169,29 @@
     </div>
     <div id="graph"></div>
     <script th:inline="javascript">
-        let spotIndex = 1; // 次の観光地インデックス
-        function addTouristSpot() {
-            const container = document.getElementById("touristSpotsContainer");
-            const newSpot = document.createElement("div");
-            newSpot.className = "touristSpot";
-            newSpot.innerHTML = `
-            <h4>観光地 ${spotIndex + 1}</h4>
-            <div class="form-group">
-                <label for="keywords">キーワード:</label>
-                <input type="text" class="form-control" name="spots[${spotIndex}]" placeholder="カンマ区切りで入力" required>
-            </div>
-        `;
-            container.appendChild(newSpot);
-            spotIndex++;
+    let spotIndex = 1; // 初期インデックス
+    function addTouristSpot() {
+        const container = document.getElementById("touristSpotsContainer");
+        const newSpot = document.createElement("div");
+        newSpot.className = "touristSpot";
+        newSpot.innerHTML = `
+        <h4>観光地 ${spotIndex + 1}</h4>
+        <div class="form-group">
+            <label for="keywords">キーワード:</label>
+            <input type="text" class="form-control" name="spots[${spotIndex}]" placeholder="空白区切りで入力" required>
+        </div>
+    `;
+        container.appendChild(newSpot);
+        spotIndex++;
+    }
+    function removeLastSpot() {
+        const container = document.getElementById("touristSpotsContainer");
+        const spots = container.getElementsByClassName("touristSpot");
+        if (spots.length > 0) {
+            spots[spots.length - 1].remove();
+            spotIndex--;
         }
+    }
         const nodes = new Map();
         const links = [];
 
@@ -486,7 +438,7 @@
         }
       });
     }
-
+   //document.addEventListener("DOMContentLoaded", populateTouristSpots);
     window.onload = initialize;
     </script>
 </body>

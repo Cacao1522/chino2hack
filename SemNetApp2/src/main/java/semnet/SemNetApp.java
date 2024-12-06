@@ -61,7 +61,7 @@ public class SemNetApp {
             config.staticFiles.add("/public"); // src/main/resources/public をマッピング
         }).start(7000);
 
-		app.get("/semnet", ctx -> {
+		app.get("/", ctx -> {
 			Map<String, Object> model = new HashMap<>();
 			String queryStr = ctx.queryParam("queryStr");
 			SemanticNet sn = new SemanticNet();
@@ -84,10 +84,10 @@ public class SemNetApp {
 			model.put("spotActivity", DataBaseDAO.getSpotActivity());
 			model.put("allActivity", DataBaseDAO.allActivity());
 			model.put("spotList", DataBaseDAO.getSpotList());
-			ctx.render("/semnet.html", model);
+			ctx.render("/travel-want.html", model);
 		});
 
-		app.post("/semnet", ctx -> {
+		app.post("/", ctx -> {
 			Map<String, Object> model = new HashMap<>();
 			String queryStr = ctx.formParam("queryStr");
 			SemanticNet sn = new SemanticNet();
@@ -107,7 +107,7 @@ public class SemNetApp {
 			model.put("spotActivity", DataBaseDAO.getSpotActivity());
 			model.put("allActivity", DataBaseDAO.allActivity());
 			model.put("spotList", DataBaseDAO.getSpotList());
-			ctx.render("/semnet.html", model);
+			ctx.render("/travel-want.html", model);
 		});
 
 		app.post("/travel-want", ctx -> {
@@ -189,7 +189,30 @@ public class SemNetApp {
 			ctx.render("/semnet.html", model);
 		});
 
-		app.post("/search", ctx -> {
+		app.get("/travel-keyword", ctx -> {
+			Map<String, Object> model = new HashMap<>();
+			String queryStr = ctx.queryParam("queryStr");
+			SemanticNet sn = new SemanticNet();
+			if (sn.isEmpty(true)) {
+				sn.addInitialLinks();
+
+			}
+
+			model.put("sn", sn);
+			if (queryStr != null) {
+				ArrayList<Link> query = strToQuery(queryStr);
+				String result = sn.query(query);
+				model.put("result", result);
+			} else {
+				queryStr = "?x is-a ?y\n?y donot ?z";
+			}
+			model.put("query", queryStr);
+	            //modelをhtmlに持って行くことで変数代入
+			DataBaseDAO.initializeDatabase();
+			ctx.render("/travel-keyword.html", model);
+		});
+
+		app.post("/travel-keyword", ctx -> {
 			String leave = ctx.formParam("leave");
 			String arrive = ctx.formParam("arrive");
 			String time = ctx.formParam("time");
@@ -205,14 +228,17 @@ public class SemNetApp {
 		    List<List<String>> keywordsList = new ArrayList<>();
 		    for (int i = 0; ctx.formParam("spots[" + i + "]") != null; i++) {
 		        String keywords = ctx.formParam("spots[" + i + "]");
-		        // カンマ区切りでキーワードを分割してリストに追加
-		        String[] keywordsArray = keywords.split(",");
+		        // 全角または半角の空白で分割
+		        String[] keywordsArray = keywords.split("\\s+");
 		        List<String> spotKeywords = new ArrayList<>();
 		        for (String keyword : keywordsArray) {
-		            spotKeywords.add(keyword.trim()); // 前後の空白を削除して追加
+		            if (!keyword.isEmpty()) { // 空文字を除外
+		                spotKeywords.add(keyword.trim()); // 前後の空白を削除して追加
+		            }
 		        }
 		        keywordsList.add(spotKeywords); // 観光地ごとのキーワードリストを追加
 		    }
+
 		 // キーワードを表示（デバッグ用）
 		    for (List<String> keyword : keywordsList) {
 		        System.out.println("キーワード: " + keyword);
@@ -226,18 +252,21 @@ public class SemNetApp {
 				sn.addInitialLinks();
 			}
 			System.out.println(s.result);
+			System.out.println(leave);
+			model.put("leave", leave.isEmpty() ? "" : leave);
+		    model.put("arrive", arrive.isEmpty() ? "" : arrive);
+		    model.put("time", time.equals("0") ? "" : time);
+		    model.put("keywords0", keywordsList.isEmpty() ? "" : String.join(" ", keywordsList.get(0)));
 			model.put("sn", sn);
-			model.put("origin", leave);
-			model.put("destination", arrive);
+			model.put("origin", leave.split(" ")[1]);
+			model.put("destination", arrive.split(" ")[1]);
 			model.put("result", s.result);
 			model.put("distance", s.maxdist);
 			model.put("totaltime", s.maxtotal);
 			model.put("satisscore", s.maxss);
 			model.put("movetime", s.optimalTravelTimes);
-			model.put("spotActivity", DataBaseDAO.getSpotActivity());
-			model.put("allActivity", DataBaseDAO.allActivity());
-			model.put("spotList", DataBaseDAO.getSpotList());
-			ctx.render("/semnet.html", model);
+			DataBaseDAO.initializeDatabase();
+			ctx.render("/travel-keyword.html", model);
 //		    Map<String, Object> model = new HashMap<>();
 //		    model.put("query", "?x is-a ?y\n?y donot ?z");
 //			ctx.render("/semnet.html", model);

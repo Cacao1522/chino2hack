@@ -19,14 +19,14 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding: 1px;
         }
         .card {
             border: 1px solid #ccc;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             padding: 15px;
-            margin: 10px 0;
-
+            margin: 20px 0;
             text-align: center;
             background-color: #f9f9f9;
         }
@@ -34,100 +34,51 @@
 		    display: flex; /* 中央揃えのためにFlexboxを使用 */
 		    justify-content: center; /* 水平方向に中央揃え */
 		    align-items: center; /* 垂直方向に中央揃え */
-		    margin: 10px 0;
 		    width: 100%; /* 親要素の幅を基準にする */
 		}
         .arrow img {
             width: 50px;
             height: auto;
         }
+        .card-arrow {
+        	width: 70%;
+        }
+        .text {
+		    width: 45%; /* カードの幅を45%に設定 */
+		    text-align: left; /* テキストを左揃え */
+		    padding-left: 15px;
+		}
     </style>
 </head>
 
 <body>
+
     <div class="container">
+    <a href="/">行きたい場所やりたいことから提案</a>
         <h3>観光地ルート提案</h3>
-        <table class="table table-bordered">
-	<thead class="thead-dark">
-	  <tr>
-	    <th>観光地</th>
-	    <th>できること</th>
-	  </tr>
-	</thead>
-	<tbody>
-	  <tr th:each="data : ${spotActivity}">
-	    <td th:text="${data[0]}"></td>
-	    <td th:text="${data[1]}"></td>
-	  </tr>
-	</tbody>
-      </table>
 
-		<p style="margin-top: 50px;margin-bottom: 10px;">
-			<h4>行きたい観光地ややりたいこと</h4>
-		</p>
-	    <form action="/travel-want" method="post">
-	    <select name="spotStr" size="5" multiple>
-	  	<tr th:each="spot : ${spotList}">
-	  	　<option th:text="${spot.name}"></option>
-	  	</tr>
-	    </select>
-
-	    <select name="doStr" size="5" multiple>
-	  	<tr th:each="do : ${allActivity}">
-	  	　<option th:text="${do}"></option>
-	  	</tr>
-	    </select>
-	    <p style="margin-top: 10px">
-			<h5>出発地点</h5>
-		</p>
-		<form action="/travel-want" method="post">
-		<select name="startStr" size="5">
-		<tr th:each="spot : ${spotList}">
-		　<option th:text="${spot.name}"></option>
-		</tr>
-		</select>
-
-		<p style="margin-top: 10px">
-			<h5>到着地点</h5>
-		</p>
-		<form action="/travel-want" method="post">
-		<select name="goalStr" size="5">
-		<tr th:each="spot : ${spotList}">
-		　<option th:text="${spot.name}"></option>
-		</tr>
-		</select>
-
-	  <button class="btn btn-warning" type="submit">
-	    決定
-	  </button>
-	    </form>
-
-      <h3>結果：</h3>
-	  <tr th:each="line: ${result}">
-	    <td><span th:text="${line}"></span><br></td></tr>
-
-
-
-        <form action="/search" method="post">
+        <form action="/travel-keyword" method="post">
             <div class="form-group">
-                <label for="leave">出発地名:</label> <input type="text" id="leave" class="form-control" name="leave" required>
+                <label for="leave">出発地名:</label> <input type="text" id="leave" class="form-control" name="leave" th:value="${leave}" required>
             </div>
             <div class="form-group">
-                <label for="arrive">到着地名:</label> <input type="text" id="arrive" class="form-control" name="arrive" required>
+                <label for="arrive">到着地名:</label> <input type="text" id="arrive" class="form-control" name="arrive" th:value="${arrive}" required>
             </div>
             <div class="form-group">
-                <label for="time">制限時間:</label> <input type="number" class="form-control" name="time" required>
+                <label for="time">制限時間:</label> <input type="number" class="form-control" name="time" th:value="${time}" required>
             </div>
             <div id="touristSpotsContainer">
-                <div class="touristSpot">
+	        	<div class="touristSpot">
                     <h4>観光地 1</h4>
                     <div class="form-group">
                         <label for="keywords">キーワード:</label>
-                        <input type="text" class="form-control" name="spots[0]" placeholder="カンマ区切りで入力" required>
+                        <input type="text" class="form-control" name="spots[0]" placeholder="空白区切りで入力" th:value="${keywords0}" required>
                     </div>
-                </div>
-            </div>
-            <button type="button" class="btn btn-secondary" onclick="addTouristSpot()">観光地を追加</button>
+	    		</div>
+			</div>
+
+            <button type="button" class="btn btn-secondary" onclick="addTouristSpot(/*[[${len}]]*/)">観光地を追加</button>
+            <button type="button" class="btn btn-danger" onclick="removeLastSpot()">末尾の観光地を削除</button>
             <button class="btn btn-primary" type="submit">検索</button>
         </form>
         <div th:if="${origin != null}">
@@ -138,17 +89,21 @@
                 <h2 th:text="${origin}">出発地名</h2>
         </div>
         <div class="arrow">
-                <img src="/images/arrow.jpg" alt="→">
-            </div>
-        <div th:each="spot, iterStat : ${result}">
+            <p class="text"></p>
+	        <img src="/images/arrow.jpg" alt="→">
+	        <p class="text"> 移動時間：<span th:text="${movetime[0]}"></span> 分</p>
+
+        </div>
+        <div class="card-arrow" th:each="spot, iterStat : ${result}">
             <div class="card">
                 <h2><a th:href="@{/spot/{name}(name=${spot.name})}" th:text="${spot.name}">観光地名</a></h2>
                 <p>満足度：<span th:text="${spot.satisfactionScore}"></span></p>
                 <p>滞在時間：<span th:text="${spot.stay}"></span> 時間</p>
             </div>
             <div class="arrow">
-                <img src="/images/arrow.jpg" alt="→">
-                <p>移動時間：<span th:text="${movetime[iterStat.index]}"></span> 分</p>
+                	<p class="text"></p>
+		            <img src="/images/arrow.jpg" alt="→">
+		            <p class="text">移動時間：<span th:text="${movetime[iterStat.index + 1]}"></span> 分</p>
             </div>
         </div>
         <div class="card">
@@ -214,21 +169,29 @@
     </div>
     <div id="graph"></div>
     <script th:inline="javascript">
-        let spotIndex = 1; // 次の観光地インデックス
-        function addTouristSpot() {
-            const container = document.getElementById("touristSpotsContainer");
-            const newSpot = document.createElement("div");
-            newSpot.className = "touristSpot";
-            newSpot.innerHTML = `
-            <h4>観光地 ${spotIndex + 1}</h4>
-            <div class="form-group">
-                <label for="keywords">キーワード:</label>
-                <input type="text" class="form-control" name="spots[${spotIndex}]" placeholder="カンマ区切りで入力" required>
-            </div>
-        `;
-            container.appendChild(newSpot);
-            spotIndex++;
+    let spotIndex = 1; // 初期インデックス
+    function addTouristSpot() {
+        const container = document.getElementById("touristSpotsContainer");
+        const newSpot = document.createElement("div");
+        newSpot.className = "touristSpot";
+        newSpot.innerHTML = `
+        <h4>観光地 ${spotIndex + 1}</h4>
+        <div class="form-group">
+            <label for="keywords">キーワード:</label>
+            <input type="text" class="form-control" name="spots[${spotIndex}]" placeholder="空白区切りで入力" required>
+        </div>
+    `;
+        container.appendChild(newSpot);
+        spotIndex++;
+    }
+    function removeLastSpot() {
+        const container = document.getElementById("touristSpotsContainer");
+        const spots = container.getElementsByClassName("touristSpot");
+        if (spots.length > 0) {
+            spots[spots.length - 1].remove();
+            spotIndex--;
         }
+    }
         const nodes = new Map();
         const links = [];
 
@@ -434,7 +397,7 @@
         //window.onload = initMap;
    function initialize() {
       // 出発地のAutocomplete設定
-      /*const leaveInput = document.getElementById('leave');
+      const leaveInput = document.getElementById('leave');
       const leaveAutocomplete = new google.maps.places.Autocomplete(leaveInput, {
         types: ['establishment'], // 施設名に限定
         componentRestrictions: { country: 'jp' } // 日本国内に限定
@@ -445,10 +408,10 @@
       const arriveAutocomplete = new google.maps.places.Autocomplete(arriveInput, {
         types: ['establishment'], // 施設名に限定
         componentRestrictions: { country: 'jp' } // 日本国内に限定
-      });*/
+      });
 
       // 出発地が選択された時の処理
-      /*leaveAutocomplete.addListener('place_changed', function () {
+      leaveAutocomplete.addListener('place_changed', function () {
         const place = leaveAutocomplete.getPlace();
         if (place.geometry) {
           const lat = place.geometry.location.lat();
@@ -459,10 +422,10 @@
         } else {
           console.log('出発地情報が取得できませんでした');
         }
-      });*/
+      });
 
       // 到着地が選択された時の処理
-      /*arriveAutocomplete.addListener('place_changed', function () {
+      arriveAutocomplete.addListener('place_changed', function () {
         const place = arriveAutocomplete.getPlace();
         if (place.geometry) {
           const lat = place.geometry.location.lat();
@@ -473,9 +436,9 @@
         } else {
           console.log('到着地情報が取得できませんでした');
         }
-      });*/
+      });
     }
-
+   //document.addEventListener("DOMContentLoaded", populateTouristSpots);
     window.onload = initialize;
     </script>
 </body>

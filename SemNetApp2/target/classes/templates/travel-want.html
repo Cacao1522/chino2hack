@@ -52,7 +52,9 @@
 </head>
 
 <body>
+
     <div class="container">
+    <a href="/travel-keyword">キーワードから提案</a>
         <h3>観光地ルート提案</h3>
         <table class="table table-bordered">
 	<thead class="thead-dark">
@@ -115,61 +117,8 @@
 
 
 
-        <form action="/search" method="post">
-            <div class="form-group">
-                <label for="leave">出発地名:</label> <input type="text" id="leave" class="form-control" name="leave" required>
-            </div>
-            <div class="form-group">
-                <label for="arrive">到着地名:</label> <input type="text" id="arrive" class="form-control" name="arrive" required>
-            </div>
-            <div class="form-group">
-                <label for="time">制限時間:</label> <input type="number" class="form-control" name="time" required>
-            </div>
-            <div id="touristSpotsContainer">
-                <div class="touristSpot">
-                    <h4>観光地 1</h4>
-                    <div class="form-group">
-                        <label for="keywords">キーワード:</label>
-                        <input type="text" class="form-control" name="spots[0]" placeholder="カンマ区切りで入力" required>
-                    </div>
-                </div>
-            </div>
-            <button type="button" class="btn btn-secondary" onclick="addTouristSpot()">観光地を追加</button>
-            <button class="btn btn-primary" type="submit">検索</button>
-        </form>
-        <div th:if="${origin != null}">
-        <h2>検索結果</h2>
-        <div class="card-container">
-        <!-- 観光地リスト -->
-        <div class="card">
-                <h2 th:text="${origin}">出発地名</h2>
-        </div>
-        <div class="arrow">
-            <p class="text"></p>
-	        <img src="/images/arrow.jpg" alt="→">
-	        <p class="text"> 移動時間：<span th:text="${movetime[0]}"></span> 分</p>
 
-        </div>
-        <div class="card-arrow" th:each="spot, iterStat : ${result}">
-            <div class="card">
-                <h2><a th:href="@{/spot/{name}(name=${spot.name})}" th:text="${spot.name}">観光地名</a></h2>
-                <p>満足度：<span th:text="${spot.satisfactionScore}"></span></p>
-                <p>滞在時間：<span th:text="${spot.stay}"></span> 時間</p>
-            </div>
-            <div class="arrow">
-                	<p class="text"></p>
-		            <img src="/images/arrow.jpg" alt="→">
-		            <p class="text">移動時間：<span th:text="${movetime[iterStat.index + 1]}"></span> 分</p>
-            </div>
-        </div>
-        <div class="card">
-                <h2 th:text="${destination}">到着地名</h2>
-        </div>
-    </div>
 
-        <div id="map" style="height: 500px; width: 100%;"></div>
-        <div id="info">移動時間がここに表示されます</div>
-       </div>
         <h3>セマンティックネット</h3>
         <table id="data-table" class="table table-bordered">
             <thead class="thead-dark">
